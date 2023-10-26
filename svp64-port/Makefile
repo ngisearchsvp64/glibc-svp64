@@ -10,6 +10,7 @@ CROSSLD = powerpc64le-linux-gnu-ld
 
 GLIBCBUILD = ../build
 GLIBCDIR = ../glibc
+SVP64 = svp64
 
 GLIBCFLAGS = -std=gnu11 -fgnu89-inline -Wall -Wundef -Wwrite-strings -fmerge-all-constants -fno-stack-protector -frounding-math -g -Wstrict-prototypes -Wold-style-definition -fmath-errno
 GLIBCFLAGS += -I$(GLIBCDIR)/include -I$(GLIBCBUILD)/string  -I$(GLIBCBUILD)/build \
@@ -34,18 +35,19 @@ GLIBCFLAGS += -D_LIBC_REENTRANT -include $(GLIBCBUILD)/libc-modules.h -include $
                 -Wl,--as-needed -lgcc_s  -Wl,--no-as-needed `gcc  --print-file-name=crtendS.o` $(GLIBCBUILD)/csu/crtn.o
 
 #compiler flags here
-CFLAGS = $(GLIBCFLAGS) -g3 -O -Wall -Wextra -I../openpower-isa/media/pypowersim_wrapper -I/usr/include/python3.7m
+CROSSCFLAGS = $(GLIBCFLAGS) -g3 -O -Wall -Wextra
+CFLAGS = $(GLIBCFLAGS) -g3 -O -Wall -Wextra -I../openpower-isa/media/pypowersim_wrapper -I/usr/include/python3.7m -fsanitize=address
 
 # assembler flags here
 ASFLAGS= -mlibresoc -mregnames -Isrc 
 
 #linker flags here
-LDFLAGS = -Wall -pthread -lpython3.7m
+LDFLAGS = -Wall -pthread -lasan -lpython3.7m
 
 BINDIR  = bin
 
-CFILES	:= support_test_main.c test-memchr.c memchr_wrapper.c memchr_real.c
-ASFILES := memchr_svp64.s memchr_real.s
+CFILES	:= support_test_main.c test-memchr.c memchr_wrapper.c
+ASFILES := $(SVP64)/memchr_svp64.s
 SVP64OBJECTS := $(ASFILES:%.s=%.o)
 OBJECTS := $(CFILES:%.c=%.o)
 BINFILES := $(BINDIR)/memchr_svp64.bin
@@ -54,16 +56,10 @@ ELFFILES := $(BINDIR)/memchr_svp64.elf
 test-memchr.o: test-memchr.c
 	$(CC) -c $(CFLAGS) -DMODULE_NAME=testsuite -o $@ $^
 
-#tester.o: tester.c
-#	$(CC) -c $(CFLAGS) -DMODULE_NAME=testsuite -o $@ $^
+$(SVP64)/memchr_svp64.s: $(GLIBCDIR)/string/memchr.c
+	$(CROSSCC) $(CROSSCFLAGS) -S -g0 -Os -DMODULE_NAME=libc -o $@ $^
 
-memchr_svp64.s: memchr_real.c
-	$(CROSSCC) $(CFLAGS) -S -g0 -Os -DMODULE_NAME=libc -o $@ $^
-
-memchr_real.o: memchr_real.c
-	$(CC) -c $(CFLAGS) -DMODULE_NAME=libc -o $@ $^
-
-$(BINDIR)/%.elf: %.o
+$(BINDIR)/%.elf: $(SVP64)/%.o
 	$(CROSSLD) -EL -o $@ -T memmap $^
 
 $(BINDIR)/%.bin: $(BINDIR)/%.elf
@@ -76,10 +72,10 @@ $(BINDIR):
 	mkdir -p $(BINDIR)
 
 $(TARGET): $(OBJECTS) $(SVP64OBJECTS) $(ELFFILES) $(BINFILES)
-	$(CC) -o $@ $(OBJECTS) $(LDFLAGS) $(TESTERLDFLAGS)
+	$(CC) -o $@ $(OBJECTS) $(LDFLAGS)
 
 clean:
-	$ rm -f $(OBJECTS) $(SVP64OBJECTS) $(BINFILES) $(ELFFILES) $(TARGET) memchr_svp64.s
+	$ rm -f $(OBJECTS) $(SVP64OBJECTS) $(BINFILES) $(ELFFILES) $(TARGET) $(SVP64)/memchr_svp64.s
 
 remove: clean
 	$ rm -f $(TARGET)

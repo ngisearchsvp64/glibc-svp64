@@ -76,7 +76,7 @@ MEMCHR_SVP64 (const char *s, int c, size_t n)
 
     // Set GPR #5 to the char 's'
     PyObject *n_svp64 = PyLong_FromUnsignedLongLong(n);
-    PyList_SetItem(state->initial_regs, 4, n_svp64);
+    PyList_SetItem(state->initial_regs, 5, n_svp64);
 
     // Load data into buffer from real memory
     size_t bytes = n;
