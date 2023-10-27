@@ -35,8 +35,8 @@ GLIBCFLAGS += -D_LIBC_REENTRANT -include $(GLIBCBUILD)/libc-modules.h -include $
                 -Wl,--as-needed -lgcc_s  -Wl,--no-as-needed `gcc  --print-file-name=crtendS.o` $(GLIBCBUILD)/csu/crtn.o
 
 #compiler flags here
-CROSSCFLAGS = $(GLIBCFLAGS) -g3 -O -Wall -Wextra
-CFLAGS = $(GLIBCFLAGS) -g3 -O -Wall -Wextra -I../openpower-isa/media/pypowersim_wrapper -I/usr/include/python3.7m -fsanitize=address
+CROSSCFLAGS = $(GLIBCFLAGS) -g3 -Os -Wall -Wextra
+CFLAGS = $(GLIBCFLAGS) -g3 -Os -Wall -Wextra -I../openpower-isa/media/pypowersim_wrapper -I/usr/include/python3.7m -fsanitize=address
 
 # assembler flags here
 ASFLAGS= -mlibresoc -mregnames -Isrc 
