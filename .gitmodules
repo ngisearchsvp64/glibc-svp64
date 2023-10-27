@@ -1,6 +1,6 @@
 [submodule "glibc"]
 	path = glibc
-	url = https://git.libre-soc.org/git/openpower-isa.git
+	url = https://sourceware.org/git/glibc.git
 [submodule "openpower-isa"]
 	path = openpower-isa
-	url = ssh://gitolite3@git.libre-soc.org:922/openpower-isa.git
+	url = https://git.libre-soc.org/git/openpower-isa.git
