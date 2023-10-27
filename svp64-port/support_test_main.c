@@ -242,7 +242,7 @@ support_test_main (int argc, char **argv, const struct test_config *config)
 
       env_fact = strtoul (envstr_timeoutfactor, &envstr_conv, 0);
       if (*envstr_conv == '\0' && envstr_conv != envstr_timeoutfactor)
-        timeoutfactor = MAX (env_fact, 1);
+        timeoutfactor = MAX (env_fact, 10);
     }
 
   /* Set TMPDIR to specified test directory.  */
