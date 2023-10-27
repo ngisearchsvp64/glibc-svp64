@@ -55,7 +55,8 @@ const char *memchr_svp64_filename = "./bin/memchr_svp64.bin";
 char*
 MEMCHR_SVP64 (const char *s, int c, size_t n)
 {
-    printf("memchr called: s: %p, c: %02x(%c), n: %ld\n", s, (uint8_t)c, c, n);
+    printf("memchr_svp64 called: s: %p, c: %02x(%c), n: %ld\n", s, (uint8_t)c, c, n);
+
     const char *sptr = s;
     // These cannot be the same pointer as the original function, as it is really a separate CPU/RAM
     // we have to memcpy from input to this pointer, the address was chosen arbitrarily
@@ -85,14 +86,14 @@ MEMCHR_SVP64 (const char *s, int c, size_t n)
     // Load data into buffer from real memory
     for (size_t i=0; i < bytes; i += 8) {
       PyObject *svp64_address = PyLong_FromUnsignedLongLong(sptr_svp64);
-      uint64_t *sptr64 = (uint64_t *) s;
+      uint64_t *sptr64 = (uint64_t *) sptr;
       printf("m[%ld] \t: %p -> %02x %02x %02x %02x %02x %02x %02x %02x\n", i, sptr64, sptr[0], sptr[1], sptr[2], sptr[3],
                                                                              sptr[4], sptr[5], sptr[6], sptr[7]);
 
       printf("val \t: %016lx -> %016lx\n", *sptr64, sptr_svp64);
       PyObject *word = PyLong_FromUnsignedLongLong(*sptr64);
       PyDict_SetItem(state->initial_mem, svp64_address, word);
-      s += 8;
+      sptr += 8;
       sptr_svp64 += 8;
     }
     // Load remaining bytes
@@ -100,7 +101,7 @@ MEMCHR_SVP64 (const char *s, int c, size_t n)
     uint64_t sptr64 = 0;
     uint8_t *sptr8 = (uint8_t *) &sptr64;
     for (size_t i=0; i < bytes_rem; i++) {
-        sptr8[i] = s[i];
+        sptr8[i] = sptr[i];
     }
     PyObject *word = PyLong_FromUnsignedLongLong(sptr64);
     PyDict_SetItem(state->initial_mem, svp64_address, word);
