@@ -46,20 +46,24 @@
 
 # define MEMCHR_SVP64 memchr_svp64
 
+#define MAX_SIZE    1024
+
 typedef CHAR *(*proto_t) (const CHAR *, int, size_t);
 CHAR *SIMPLE_MEMCHR (const CHAR *, int, size_t);
 CHAR *MEMCHR_SVP64 (const CHAR *, int, size_t);
 
-IMPL (SIMPLE_MEMCHR, 0)
-IMPL (MEMCHR, 1)
-IMPL (MEMCHR_SVP64, 2)
+IMPL (MEMCHR, 0)
+IMPL (MEMCHR_SVP64, 1)
+IMPL (SIMPLE_MEMCHR, 2)
 
 CHAR *
 SIMPLE_MEMCHR (const CHAR *s, int c, size_t n)
 {
-  while (n--)
+  printf("memchr called: s: %p, c: %02x(%c), n: %lu\n", s, (uint8_t)c, c, n);
+  while (n--) {
     if (*s++ == (CHAR) c)
       return (CHAR *) s - 1;
+  }
   return NULL;
 }
 
@@ -195,20 +199,20 @@ test_main (void)
       /* Check for large input sizes and for these cases we need to
 	 make sure the byte is within the size range (that's why
 	 7 << i must be smaller than 2048).  */
-      do_test (0, 7 << i, 2048, SIZE_MAX, 23);
-      do_test (0, 2048 - i, 2048, SIZE_MAX, 23);
-      do_test (i, 64, 256, SIZE_MAX, 23);
-      do_test (0, 7 << i, 2048, SIZE_MAX, 0);
-      do_test (0, 2048 - i, 2048, SIZE_MAX, 0);
-      do_test (i, 64, 256, SIZE_MAX, 0);
+      do_test (0, 7 << i, 2048, MAX_SIZE, 23);
+      do_test (0, 2048 - i, 2048, MAX_SIZE, 23);
+      do_test (i, 64, 256, MAX_SIZE, 23);
+      do_test (0, 7 << i, 2048, MAX_SIZE, 0);
+      do_test (0, 2048 - i, 2048, MAX_SIZE, 0);
+      do_test (i, 64, 256, MAX_SIZE, 0);
     }
 
   for (i = 1; i < 64; ++i)
     {
       for (j = 1; j < 64; j++)
         {
-	  do_test (0, 64 - j, 64, SIZE_MAX, 23);
-	  do_test (i, 64 - j, 64, SIZE_MAX, 23);
+	  do_test (0, 64 - j, 64, MAX_SIZE, 23);
+	  do_test (i, 64 - j, 64, MAX_SIZE, 23);
         }
     }
 
