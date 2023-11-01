@@ -8,7 +8,7 @@
     .set c, 4
     .set n, 5
     .set s, 10
-    .set e, 110
+    .set e, 73
 
     .globl __memchr
     .type   __memchr, @function
@@ -16,6 +16,13 @@ __memchr:
 .LFB6:
     .cfi_startproc
 
+    # Steps required for memchr
+    # 1. First we need to get the SIZE = min(n, 64).
+    # 2. Then the outer loop will try to process up to SIZE bytes and reduce SIZE by 64.
+    # Outer loop will run until SIZE = 0.
+    # 3. The inner loop can be a modified (sans the store) version of this:
+    # https://git.libre-soc.org/?p=openpower-isa.git;a=blob;f=src/openpower/decoder/isa/test_caller_svp64_ldst.py;h=4ecf534777a5e8a0178b29dbcd69a1a5e2dd14d6;hb=HEAD#l36
+    # 
     addi 9,5,1
     rlwinm 8,4,0,0xff
     mtctr 9
