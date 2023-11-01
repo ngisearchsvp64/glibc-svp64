@@ -1,12 +1,21 @@
+    .machine libresoc
 	.file	"memchr.c"
-	.abiversion 2
-	.section	".text"
-	.align 2
+    .abiversion 2
+    .section   ".text"
+    .align 2
+
+    .set in_ptr, 3
+    .set c, 4
+    .set n, 5
+    .set s, 10
+    .set e, 110
+
 	.globl __memchr
 	.type	__memchr, @function
 __memchr:
 .LFB6:
 	.cfi_startproc
+
 	addi 9,5,1
 	rlwinm 8,4,0,0xff
 	mtctr 9
