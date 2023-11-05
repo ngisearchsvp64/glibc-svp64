@@ -5,10 +5,51 @@
     .align 2
 
     .set in_ptr, 3
+    .set res, 3
     .set c, 4
     .set n, 5
-    .set s, 10
-    .set e, 73
+    .set tmp, 6
+    .set ctr, 7
+    .set c64, 8
+    .set c_01, 9
+    .set c_80, 10
+    .set s, 16
+    .set d, 48
+    .set t, 96
+
+# Helper macros
+
+# load & duplicate byte to a 64-bit register, tmp register passed
+.macro  ldbi rD, rT
+    rldicr  \rT,\rD,8,55
+    or      \rT,\rT,\rD
+    rldicr  \rD,\rT,16,47
+    or      \rD,\rD,\rT
+    rldicr  \rT,\rD,32,31
+    or      \rD,\rT,\rD
+.endm
+
+# check if 64-bit word has a zero byte
+# #define haszero(v) (((v) - 0x01010101UL) & ~(v) & 0x80808080UL)
+.macro  haszero rD, rS, rT, c_01_, c_80_
+    subf        \rT, \c_01_, \rS
+    andc        \rD, \rT, \rS
+    and         \rD, \rT, \c_80_
+    cmpli       \rD, 0
+.endm
+
+#SVP64 version
+.macro  sv_haszero rD, rS, rT, c_01_, c_80_, jumpto
+    sv.subf     *\rT, \c_01_, *\rS
+    sv.andc     *\rD, *\rT, *\rS
+    sv.and      *\rD, *\rT, \c_80_
+    sv.cmpi     *cr0, 0, *\rD, 0
+    sv.bc       *cr0, 2, \jumpto
+.endm
+
+
+# #define hasvalue(x,n) haszero((x) ^ (~0UL/255 * (n))))
+
 
     .globl __memchr
     .type   __memchr, @function
@@ -17,72 +58,53 @@ __memchr:
     .cfi_startproc
 
     # Steps required for memchr
-    # 1. First we need to get the SIZE = min(n, 64).
+    # 1. First we need to get the SIZE = min(n, 32).
     # 2. Then the outer loop will try to process up to SIZE bytes and reduce SIZE by 64.
     # Outer loop will run until SIZE = 0.
     # 3. The inner loop can be a modified (sans the store) version of this:
     # https://git.libre-soc.org/?p=openpower-isa.git;a=blob;f=src/openpower/decoder/isa/test_caller_svp64_ldst.py;h=4ecf534777a5e8a0178b29dbcd69a1a5e2dd14d6;hb=HEAD#l36
-    # 
-    addi 9,5,1
-    rlwinm 8,4,0,0xff
-    mtctr 9
-.L2:
-    bdz .L4
-    andi. 9,3,0x7
-    bne 0,.L5
-.L4:
-    rlwinm 9,4,8,16,23
-    rlwinm 4,4,0,24,31
-    or 4,9,4
-    lis 7,0xfefe
-    extsw 4,4
-    lis 6,0x8080
-    sldi 9,4,16
-    ori 7,7,0xfefe
-    or 4,9,4
-    ori 6,6,0x8080
-    sldi 9,4,32
-    sldi 7,7,32
-    or 4,9,4
-    srdi 9,5,3
-    addi 9,9,1
-    sldi 6,6,32
-    mtctr 9
-    oris 7,7,0xfefe
-    oris 6,6,0x8080
-    ori 7,7,0xfeff
-    ori 6,6,0x8080
-.L6:
-    bdnz .L8
-.L7:
-    addi 9,5,1
-    mtctr 9
-    b .L9
-.L5:
-    lbz 9,0(3)
-    cmpw 7,9,8
-    beqlr 7
-    addi 5,5,-1
-    addi 3,3,1
-    b .L2
-.L8:
-    ld 9,0(3)
-    xor 10,4,9
-    add 9,10,7
-    andc 9,9,10
-    and. 9,9,6
-    bne 0,.L7
-    addi 3,3,8
-    addi 5,5,-8
-    b .L6
-.L10:
-    lbz 9,0(3)
-    cmpw 7,9,8
-    beqlr 7
-    addi 3,3,1
-.L9:
-    bdnz .L10
-    li 3,0
+    #
+
+    # if bytes == 0, return
+    cmplwi              n, 0                
+    beqlr
+
+    # Load the character c into all bytes of register c64: GPR#7
+    ori                 c64, c, 0
+    ldbi                c64, tmp
+    
+    # Load the constants 0x0101010101010101ULL and 0x8080808080808080ULL for zero byte check
+    li                  c_01, 0x01
+    ldbi                c_01, tmp
+    li                  c_80, 0x80
+    ldbi                c_80, tmp
+           
+.outer:
+    # find out how many bytes to load from s: min(n, 32), but in octets
+    srdi                tmp, n, 3
+    cmplwi              tmp, 4
+    blt                 .inner
+    li                  tmp, 4
+
+.inner:
+    # Set ctr to min(64, n)
+    ori                 ctr, tmp, 0
+    mtctr	            ctr                     # Set up counter
+
+    setvl               0, 0, ctr, 0, 1, 1      # Set VL to 8 elements
+    #setvl               0, 0, ctr, 1, 1, 1      # MAXVL=VL=4, VF=1
+    sv.ld               *s, 0(in_ptr)           # Load from *in_ptr
+    sv_haszero          d, s, t, c_01, c_80, .found
+    #sv.cmp              *cr0, c64, *s, 1
+    #sv.cmp/ff=ne/vli    *cr0, c64, *s, 1        # cmp against mask, truncate VL
+    #svstep.             ctr, 1, 0               # step to next in-regs element
+    #bc                  6, 3, .inner               # svstep. Rc=1 loop-end-condition?
+    subi                n, n, 64
+    addi                in_ptr, in_ptr, 64
+    cmplwi              n, 0
+    bne                 .outer
+.found:
+
     blr
     .long 0
     .byte 0,0,0,0,0,0,0,0
