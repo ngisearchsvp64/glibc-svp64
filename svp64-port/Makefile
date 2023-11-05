@@ -47,8 +47,8 @@ LDFLAGS = -Wall -pthread -lasan -lpython3.7m
 BINDIR  = bin
 
 CFILES	:= support_test_main.c test-memchr.c memchr_wrapper.c
-ASFILES := $(SVP64)/memchr_svp64.s
-SVP64OBJECTS := $(ASFILES:%.s=%.o)
+ASFILES := $(SVP64)/memchr_svp64.s $(SVP64)/memchr_orig_ppc64.s
+SVP64OBJECTS := $(ASFILES:$(SVP64)/%.s=$(SVP64)/%.o)
 OBJECTS := $(CFILES:%.c=%.o)
 BINFILES := $(BINDIR)/memchr_svp64.bin
 ELFFILES := $(BINDIR)/memchr_svp64.elf
@@ -56,7 +56,7 @@ ELFFILES := $(BINDIR)/memchr_svp64.elf
 test-memchr.o: test-memchr.c
 	$(CC) -c $(CFLAGS) -DMODULE_NAME=testsuite -o $@ $^
 
-$(SVP64)/memchr_svp64.s: $(GLIBCDIR)/string/memchr.c
+$(SVP64)/memchr_orig_ppc64.s: $(GLIBCDIR)/string/memchr.c
 	$(CROSSCC) $(CROSSCFLAGS) -S -g0 -Os -DMODULE_NAME=libc -o $@ $^
 
 $(BINDIR)/%.elf: $(SVP64)/%.o
@@ -75,7 +75,7 @@ $(TARGET): $(OBJECTS) $(SVP64OBJECTS) $(ELFFILES) $(BINFILES)
 	$(CC) -o $@ $(OBJECTS) $(LDFLAGS)
 
 clean:
-	$ rm -f $(OBJECTS) $(SVP64OBJECTS) $(BINFILES) $(ELFFILES) $(TARGET) $(SVP64)/memchr_svp64.s
+	$ rm -f $(OBJECTS) $(SVP64OBJECTS) $(BINFILES) $(ELFFILES) $(TARGET)
 
 remove: clean
 	$ rm -f $(TARGET)
