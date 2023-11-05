@@ -47,6 +47,17 @@
     sv.bc       *cr0, 2, \jumpto
 .endm
 
+# check if 64-bit word has a char c, just xor the word with c64 and call haszero
+.macro  haschar rD, rS, rT, c64_, c_01_, c_80_
+    xor         \rD, \c64_, \rD
+    haszero     \rD, \rS, \rT, \c_01_, \c_80_
+.endm
+
+#SVP64 version
+.macro  sv_haschar rD, rS, rT, c64_, c_01_, c_80_, jumpto
+    sv.xor      *\rD, \c64_, *\rD
+    sv_haszero  \rD, \rS, \rT, \c_01_, \c_80_, \jumpto
+.endm
 
 # #define hasvalue(x,n) haszero((x) ^ (~0UL/255 * (n))))
 
@@ -65,10 +76,16 @@ __memchr:
     # https://git.libre-soc.org/?p=openpower-isa.git;a=blob;f=src/openpower/decoder/isa/test_caller_svp64_ldst.py;h=4ecf534777a5e8a0178b29dbcd69a1a5e2dd14d6;hb=HEAD#l36
     #
 
-    # if bytes == 0, return
-    cmplwi              n, 0                
-    beqlr
 
+    # Simple case: if bytes == 0, return NULL
+    cmplwi              n, 0
+    beq                 .end
+
+    # We should check for n <= 8
+    cmplwi              n, 8
+    ble                 .found
+
+    # Size is >= 8
     # Load the character c into all bytes of register c64: GPR#7
     ori                 c64, c, 0
     ldbi                c64, tmp
@@ -91,10 +108,10 @@ __memchr:
     ori                 ctr, tmp, 0
     mtctr	            ctr                     # Set up counter
 
-    setvl               0, 0, ctr, 0, 1, 1      # Set VL to 8 elements
+    setvl               0, 0, ctr, 0, 1, 1      # Set VL to 4 elements
     #setvl               0, 0, ctr, 1, 1, 1      # MAXVL=VL=4, VF=1
     sv.ld               *s, 0(in_ptr)           # Load from *in_ptr
-    sv_haszero          d, s, t, c_01, c_80, .found
+    sv_haschar          d, s, t, c64, c_01, c_80, .found
     #sv.cmp              *cr0, c64, *s, 1
     #sv.cmp/ff=ne/vli    *cr0, c64, *s, 1        # cmp against mask, truncate VL
     #svstep.             ctr, 1, 0               # step to next in-regs element
@@ -104,7 +121,15 @@ __memchr:
     cmplwi              n, 0
     bne                 .outer
 .found:
+    lbz                 s, 0(in_ptr)
+	cmpw                cr0, c, s
+	beqlr               cr0
+	addi                in_ptr, in_ptr, 1
+	bdnz                .found
 
+.end:
+    # If we have reached this point, there is no match, return NULL
+	li                  res, 0
     blr
     .long 0
     .byte 0,0,0,0,0,0,0,0
