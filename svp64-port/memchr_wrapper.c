@@ -82,19 +82,18 @@ MEMCHR_SVP64 (const char *s, int c, size_t n)
     // Load data into buffer from real memory
     size_t bytes = n;
     size_t bytes_rem = bytes % 8;
-    bytes -= bytes_rem;    
+    bytes -= bytes_rem;
+    printf("bytes: %ld, bytes_rem: %ld\n", bytes, bytes_rem);
     // Load data into buffer from real memory
     for (size_t i=0; i < bytes; i += 8) {
-      PyObject *svp64_address = PyLong_FromUnsignedLongLong(sptr_svp64);
+      PyObject *svp64_address = PyLong_FromUnsignedLongLong(sptr_svp64 + i * 8);
       uint64_t *sptr64 = (uint64_t *) sptr;
       printf("m[%ld] \t: %p -> %02x %02x %02x %02x %02x %02x %02x %02x\n", i, sptr64, sptr[0], sptr[1], sptr[2], sptr[3],
                                                                              sptr[4], sptr[5], sptr[6], sptr[7]);
-
       printf("val \t: %016lx -> %016lx\n", *sptr64, sptr_svp64);
       PyObject *word = PyLong_FromUnsignedLongLong(*sptr64);
       PyDict_SetItem(state->initial_mem, svp64_address, word);
       sptr += 8;
-      sptr_svp64 += 8;
     }
     // Load remaining bytes
     PyObject *svp64_address = PyLong_FromUnsignedLongLong(sptr_svp64);
@@ -102,7 +101,10 @@ MEMCHR_SVP64 (const char *s, int c, size_t n)
     uint8_t *sptr8 = (uint8_t *) &sptr64;
     for (size_t i=0; i < bytes_rem; i++) {
         sptr8[i] = sptr[i];
+        printf("%02x ", sptr[i]);
     }
+    printf("\n");
+    printf("val \t: %016lx -> %016lx\n", sptr64, sptr_svp64);
     PyObject *word = PyLong_FromUnsignedLongLong(sptr64);
     PyDict_SetItem(state->initial_mem, svp64_address, word);
 
@@ -146,10 +148,16 @@ MEMCHR_SVP64 (const char *s, int c, size_t n)
     uint64_t val = PyLong_AsUnsignedLongLong(value);
     printf("return val \t: %016lx\n", val);
     if (val) {
-       // Return value
-       char *result = (char *) s;
-       result += sptr_svp64 - val;
-       return result;
+        // Return value
+        char *result = (char *) s;
+        printf("s         : %p\n", result);
+        uint64_t offset = val - sptr_svp64;
+        printf("sptr_svp64: %016lx\n", sptr_svp64);
+        printf("val       : %016lx\n", val);
+        printf("offset    : %016lx\n", offset);
+        result += offset;
+        printf("result    : %p\n", result);
+        return result;
     } else {
         return NULL;
     }
