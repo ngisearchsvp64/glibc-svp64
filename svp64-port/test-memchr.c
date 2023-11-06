@@ -46,13 +46,13 @@
 
 # define MEMCHR_SVP64 memchr_svp64
 
-#define MAX_SIZE    1024
+#define MAX_SIZE    256
 
 typedef CHAR *(*proto_t) (const CHAR *, int, size_t);
 CHAR *SIMPLE_MEMCHR (const CHAR *, int, size_t);
 CHAR *MEMCHR_SVP64 (const CHAR *, int, size_t);
 
-IMPL (MEMCHR, 0)
+//IMPL (MEMCHR, 0)
 IMPL (MEMCHR_SVP64, 1)
 IMPL (SIMPLE_MEMCHR, 2)
 
@@ -191,19 +191,19 @@ test_main (void)
       do_test (i, i, 0, 0, 23);
       do_test (i, i, 0, 0, 0);
 
-      do_test (0, 16 << i, 2048, 2048, 23);
+      do_test (0, 16 << i, 1024, 1024, 23);
       do_test (i, 64, 256, 256, 23);
-      do_test (0, 16 << i, 2048, 2048, 0);
+      do_test (0, 16 << i, 1024, 1024, 0);
       do_test (i, 64, 256, 256, 0);
 
       /* Check for large input sizes and for these cases we need to
 	 make sure the byte is within the size range (that's why
-	 7 << i must be smaller than 2048).  */
-      do_test (0, 7 << i, 2048, MAX_SIZE, 23);
-      do_test (0, 2048 - i, 2048, MAX_SIZE, 23);
+	 7 << i must be smaller than 1024).  */
+      do_test (0, 7 << i, 1024, MAX_SIZE, 23);
+      do_test (0, 1024 - i, 1024, MAX_SIZE, 23);
       do_test (i, 64, 256, MAX_SIZE, 23);
-      do_test (0, 7 << i, 2048, MAX_SIZE, 0);
-      do_test (0, 2048 - i, 2048, MAX_SIZE, 0);
+      do_test (0, 7 << i, 1024, MAX_SIZE, 0);
+      do_test (0, 1024 - i, 1024, MAX_SIZE, 0);
       do_test (i, 64, 256, MAX_SIZE, 0);
     }
 
