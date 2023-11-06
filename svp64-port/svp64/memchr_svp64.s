@@ -59,9 +59,6 @@
     sv_haszero  \rD, \rS, \rT, \c_01_, \c_80_, \jumpto
 .endm
 
-# #define hasvalue(x,n) haszero((x) ^ (~0UL/255 * (n))))
-
-
     .globl __memchr
     .type   __memchr, @function
 __memchr:
@@ -76,11 +73,27 @@ __memchr:
     # https://git.libre-soc.org/?p=openpower-isa.git;a=blob;f=src/openpower/decoder/isa/test_caller_svp64_ldst.py;h=4ecf534777a5e8a0178b29dbcd69a1a5e2dd14d6;hb=HEAD#l36
     #
 
-
     # Simple case: if bytes == 0, return NULL
     cmplwi              n, 0
-    beq                 .end
+    beq                 .tail
 
+    # We should check for n <= 8
+    cmplwi              n, 8
+    ble                 .found
+
+.head:
+    # We have to check for alignment
+	andi.               tmp, in_ptr, 0x7
+	beq                 0, .aligned
+
+    lbz                 s, 0(in_ptr)
+	cmpw                cr0, c, s
+	beqlr               cr0
+	addi                in_ptr, in_ptr, 1
+    subi                n, n, 1
+	b                   .head
+
+.aligned:
     # We should check for n <= 8
     cmplwi              n, 8
     ble                 .found
@@ -93,8 +106,9 @@ __memchr:
     # Load the constants 0x0101010101010101ULL and 0x8080808080808080ULL for zero byte check
     li                  c_01, 0x01
     ldbi                c_01, tmp
-    li                  c_80, 0x80
-    ldbi                c_80, tmp
+    sldi                c_80, c_01, 7
+    #li                  c_80, 0x80
+    #ldbi                c_80, tmp
            
 .outer:
     # find out how many bytes to load from s: min(n, 32), but in octets
@@ -127,7 +141,7 @@ __memchr:
 	addi                in_ptr, in_ptr, 1
 	bdnz                .found
 
-.end:
+.tail:
     # If we have reached this point, there is no match, return NULL
 	li                  res, 0
     blr
