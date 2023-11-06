@@ -13,6 +13,7 @@
     .set c64, 8
     .set c_01, 9
     .set c_80, 10
+    .set c_ff, 1
     .set s, 16
     .set d, 48
     .set t, 96
@@ -74,29 +75,30 @@ __memchr:
     #
 
     # Simple case: if bytes == 0, return NULL
-    cmplwi              n, 0
+    cmpldi              n, 0
     beq                 .tail
 
     # We should check for n <= 8
-    cmplwi              n, 8
-    ble                 .found
+    cmpldi              n, 8
+    blt                 .found
 
-.head:
     # We have to check for alignment
 	andi.               tmp, in_ptr, 0x7
-	beq                 0, .aligned
+	beq                 .aligned
 
+    mtctr	            tmp                       # Set up counter
+.head:
     lbz                 s, 0(in_ptr)
 	cmpw                cr0, c, s
 	beqlr               cr0
 	addi                in_ptr, in_ptr, 1
     subi                n, n, 1
-	b                   .head
+	bdnz                .head
 
 .aligned:
     # We should check for n <= 8
-    cmplwi              n, 8
-    ble                 .found
+    cmpldi              n, 8
+    blt                 .found
 
     # Size is >= 8
     # Load the character c into all bytes of register c64: GPR#7
@@ -107,39 +109,42 @@ __memchr:
     li                  c_01, 0x01
     ldbi                c_01, tmp
     sldi                c_80, c_01, 7
-    #li                  c_80, 0x80
-    #ldbi                c_80, tmp
+    li                  c_ff, 0xff
+    ldbi                c_ff, tmp
            
 .outer:
     # find out how many bytes to load from s: min(n, 32), but in octets
     srdi                tmp, n, 3
-    cmplwi              tmp, 4
+    cmpldi              tmp, 4
     blt                 .inner
     li                  tmp, 4
 
 .inner:
-    # Set ctr to min(64, n)
+    # Set ctr to min(32, n)
     ori                 ctr, tmp, 0
-    mtctr	            ctr                     # Set up counter
 
     setvl               0, 0, ctr, 0, 1, 1      # Set VL to 4 elements
     #setvl               0, 0, ctr, 1, 1, 1      # MAXVL=VL=4, VF=1
     sv.ld               *s, 0(in_ptr)           # Load from *in_ptr
-    sv_haschar          d, s, t, c64, c_01, c_80, .found
-    #sv.cmp              *cr0, c64, *s, 1
+    #sv_haschar          d, s, t, c64, c_01, c_80, .found
+    sv.cmpb             *t, *s, c64
+    sv.cmp              *cr0, 0, *t, 1
+    sv.bc               *cr0, 2, .found
     #sv.cmp/ff=ne/vli    *cr0, c64, *s, 1        # cmp against mask, truncate VL
     #svstep.             ctr, 1, 0               # step to next in-regs element
     #bc                  6, 3, .inner               # svstep. Rc=1 loop-end-condition?
-    subi                n, n, 64
-    addi                in_ptr, in_ptr, 64
+    addi                in_ptr, in_ptr, 32
+    subi                n, n, 32
     cmplwi              n, 0
     bne                 .outer
 .found:
+    mtctr	            n                       # Set up counter
+.found2:
     lbz                 s, 0(in_ptr)
 	cmpw                cr0, c, s
 	beqlr               cr0
 	addi                in_ptr, in_ptr, 1
-	bdnz                .found
+	bdnz                .found2
 
 .tail:
     # If we have reached this point, there is no match, return NULL
