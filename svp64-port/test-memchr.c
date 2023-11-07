@@ -191,32 +191,32 @@ test_main (void)
       do_test (i, i, 0, 0, 23);
       do_test (i, i, 0, 0, 0);
 
-/*      do_test (0, 16 << i, 1024, 1024, 23);
+      do_test (0, 16 << i, 1024, 1024, 23);
       do_test (i, 64, 256, 256, 23);
       do_test (0, 16 << i, 1024, 1024, 0);
-      do_test (i, 64, 256, 256, 0);*/
+      do_test (i, 64, 256, 256, 0);
 
       /* Check for large input sizes and for these cases we need to
 	 make sure the byte is within the size range (that's why
 	 7 << i must be smaller than 1024).  */
-/*      do_test (0, 7 << i, 1024, MAX_SIZE, 23);
+      do_test (0, 7 << i, 1024, MAX_SIZE, 23);
       do_test (0, 1024 - i, 1024, MAX_SIZE, 23);
       do_test (i, 64, 256, MAX_SIZE, 23);
       do_test (0, 7 << i, 1024, MAX_SIZE, 0);
       do_test (0, 1024 - i, 1024, MAX_SIZE, 0);
-      do_test (i, 64, 256, MAX_SIZE, 0);*/
+      do_test (i, 64, 256, MAX_SIZE, 0);
     }
 
-/*  for (i = 1; i < 64; ++i)
+  for (i = 1; i < 64; ++i)
     {
       for (j = 1; j < 64; j++)
         {
 	  do_test (0, 64 - j, 64, MAX_SIZE, 23);
 	  do_test (i, 64 - j, 64, MAX_SIZE, 23);
         }
-    }*/
+    }
 
-  for (i = 7; i < 8; ++i)
+  for (i = 1; i < 8; ++i)
     {
       do_test (0, i, i + 1, i + 1, 23);
       do_test (0, i, i + 1, i + 1, 0);
@@ -224,11 +224,11 @@ test_main (void)
 
   /* BZ#21182 - wrong overflow calculation for i686 implementation
      with address near end of the page.  */
-//  for (i = 2; i < 16; ++i)
+  for (i = 2; i < 16; ++i)
     /* page_size is in fact getpagesize() * 2.  */
-    //do_test (page_size / 2 - i, i, i, 1, 0x9B);
+    do_test (page_size / 2 - i, i, i, 1, 0x9B);
 
-  //do_random_tests ();
+  do_random_tests ();
   return ret;
 }
 
