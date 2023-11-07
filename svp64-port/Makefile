@@ -36,13 +36,13 @@ GLIBCFLAGS += -D_LIBC_REENTRANT -include $(GLIBCBUILD)/libc-modules.h -include $
 
 #compiler flags here
 CROSSCFLAGS = $(GLIBCFLAGS) -g3 -Os -Wall -Wextra
-CFLAGS = $(GLIBCFLAGS) -g3 -Os -Wall -Wextra -I../openpower-isa/media/pypowersim_wrapper -I/usr/include/python3.7m -fsanitize=address
+CFLAGS = $(GLIBCFLAGS) -g3 -Os -Wall -Wextra -I../openpower-isa/media/pypowersim_wrapper -I/usr/include/python3.7m #-fsanitize=address
 
 # assembler flags here
 ASFLAGS= -mlibresoc -mregnames -Isrc 
 
 #linker flags here
-LDFLAGS = -Wall -pthread -lasan -lpython3.7m
+LDFLAGS = -Wall -pthread -lpython3.7m #-lasan
 
 BINDIR  = bin
 
