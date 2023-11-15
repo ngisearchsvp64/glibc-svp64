@@ -58,19 +58,22 @@ __memchr:
 
     # set up ctr to 4 64-bit elements (32 bytes)
     li                  ctr, 4
-    #mtctr               ctr
-.inner:
+    mtctr               ctr
     setvl               0, 0, ctr, 1, 1, 1      # Set VL to 4 elements, VF=1
+.inner:
     sv.ld               *s, 0(in_ptr)           # Load from *in_ptr
     sv.cmpb             *t, *s, c64             # this will create a bitmask of FF where character c is found
-    sv.cmpi             cr2, 0, *t, 0
-    sv.bc               4, cr2, .found
+    sv.cmpi             *cr0, 0, *t, 0
+    sv.bc               4, *2, .found
     svstep.             ctr, 1, 0
     addi                in_ptr, in_ptr, 8
     subi                n, n, 8
-    sv.bc/all           16, *cr0, .found
+    #sv.bc/all           16, *cr0, .found
+    # alternatively could checked the overflow bit of CR0...
+    bdnz                .inner # or alternatively, bc 16, 0, .inner
 
     b                   .outer
+
 
 .found:
     mtctr	            n                       # Set up counter
