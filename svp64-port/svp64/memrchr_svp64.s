@@ -47,7 +47,7 @@ __memchr:
     ori                 c64, c, 0
     ldbi                c64, tmp
     # Start from the end - TODO: li is 16-bit I think, probably will fail if n too big...
-    li					in_ptr, n
+    add					in_ptr, in_ptr, n
 
 .outer:
     # Simple case: if bytes == 0, return NULL
@@ -63,10 +63,10 @@ __memchr:
     mtctr               ctr
     setvl               0, ctr, 4, 1, 1, 1      # Set VL to 4 elements, VF=1
 .inner:
-    sv.ld/mrr           *s, 0(in_ptr)           # Load from *in_ptr
-    sv.cmpb/mrr         *t, *s, c64             # this will create a bitmask of FF where character c is found
-    sv.cmpi/mrr         *cr0, 1, *t, 0
-    sv.bc/mrr           0, *2, .found
+    sv.ld               *s, 0(in_ptr)           # Load from *in_ptr
+    sv.cmpb             *t, *s, c64             # this will create a bitmask of FF where character c is found
+    sv.cmpi             *cr0, 1, *t, 0
+    sv.bc               0, *2, .found
     svstep.             ctr, 1, 0
     subi                in_ptr, in_ptr, 8
     subi                n, n, 8
