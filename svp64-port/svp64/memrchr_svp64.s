@@ -47,7 +47,9 @@ __memchr:
     ori                 c64, c, 0
     ldbi                c64, tmp
     # Start from the end - TODO: li is 16-bit I think, probably will fail if n too big...
+    # Need to subtract 1 as memory index starts at 0 for n=1, etc.
     add					in_ptr, in_ptr, n
+    subi				in_ptr, in_ptr, 1
 
 .outer:
     # Simple case: if bytes == 0, return NULL
@@ -58,16 +60,24 @@ __memchr:
     cmpldi              n, 32
     blt                 .found
 
+	# TODO: Messy...this offset only needs to happen once
+	# at the start. As we're starting at the end and
+	# reading 8 bytes at a time, need to go back by 7 bytes
+	# Skip if not the first iteration
+	cmpi				cr0, 0, ctr, 0
+	bf					2, .skip_offset
+	subi				in_ptr, in_ptr, 7
+.skip_offset:
     # set up ctr to 4 64-bit elements (32 bytes)
     li                  ctr, 4
     mtctr               ctr
-    setvl               0, ctr, 4, 1, 1, 1      # Set VL to 4 elements, VF=1
+    setvl               0, 0, ctr, 1, 1, 1      # Set VL to 4 elements, VF=1
 .inner:
     sv.ld               *s, 0(in_ptr)           # Load from *in_ptr
     sv.cmpb             *t, *s, c64             # this will create a bitmask of FF where character c is found
     sv.cmpi             *cr0, 1, *t, 0
-    sv.bc               0, *2, .found
-    svstep.             ctr, 1, 0
+    sv.bc               4, *2, .found
+    svstep.             0, 1, 0
     subi                in_ptr, in_ptr, 8
     subi                n, n, 8
     #sv.bc/all           16, *cr0, .found
@@ -83,7 +93,7 @@ __memchr:
     lbz                 s, 0(in_ptr)
 	cmpw                cr0, c, s
 	beqlr               cr0
-	addi                in_ptr, in_ptr, 1
+	subi                in_ptr, in_ptr, 1
 	bdnz                .found2
 
 .tail:
