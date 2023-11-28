@@ -76,8 +76,11 @@ __memchr:
     sv.ld               *s, 0(in_ptr)           # Load from *in_ptr
     sv.cmpb             *t, *s, c64             # this will create a bitmask of FF where character c is found
     sv.cmpi             *cr0, 1, *t, 0
-    sv.bc               4, *2, .found
-    svstep.             0, 1, 0
+    # Hard-coded instead of .found, binutils calculated
+    # the wrong address of 0x68, which is bc instruction,
+    # so get's stuck in infinite loop
+    sv.bc               4, *2, 128
+    svstep.             0, 1, 1
     subi                in_ptr, in_ptr, 8
     subi                n, n, 8
     #sv.bc/all           16, *cr0, .found
