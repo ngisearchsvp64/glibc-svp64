@@ -69,9 +69,9 @@ __memchr:
 	subi				in_ptr, in_ptr, 7
 .skip_offset:
     # set up ctr to 4 64-bit elements (32 bytes)
-    li                  ctr, 4
+    li                  ctr, 1 # using 1 for now, was 4
     mtctr               ctr
-    setvl               0, 0, ctr, 1, 1, 1      # Set VL to 4 elements, VF=1
+    setvl               0, ctr, 4, 1, 1, 1      # Set VL to 4 elements, VF=1
 .inner:
     sv.ld               *s, 0(in_ptr)           # Load from *in_ptr
     sv.cmpb             *t, *s, c64             # this will create a bitmask of FF where character c is found
@@ -79,8 +79,15 @@ __memchr:
     # Hard-coded instead of .found, binutils calculated
     # the wrong address of 0x68, which is bc instruction,
     # so get's stuck in infinite loop
-    sv.bc               4, *2, 128
-    svstep.             0, 1, 1
+    # To calculate the right constant, do make all,
+    # then powerpc64le-linux-gnu-objdump -D svp64/memrchr_svp64.o
+    # To see the dump of the object file.
+    # Take the address you want to got (i.e. 0x80), subtract
+    # the starting address of sv prefix for sv.bc (0x64),
+    # the difference is the value to use (0x80-0x64=0x1c).
+    #sv.bc               4, *2, .found
+    sv.bc               4, *2, 0x1c
+    svstep              0, 1, 0
     subi                in_ptr, in_ptr, 8
     subi                n, n, 8
     #sv.bc/all           16, *cr0, .found
