@@ -16,6 +16,7 @@
     .set c_ff, 1
     .set s, 16
     .set t, 32
+    .set rem, 11
 
 # Helper macros
 
@@ -46,6 +47,8 @@ __memchr:
     # Load the character c into all bytes of register c64: GPR#7
     ori                 c64, c, 0
     ldbi                c64, tmp
+    # Load constant 8, used for modulo op to check n divisible by 8
+    li                  tmp, 8
     # Start from the end - TODO: li is 16-bit I think, probably will fail if n too big...
     # Need to subtract 1 as memory index starts at 0 for n=1, etc.
     add					in_ptr, in_ptr, n
@@ -60,13 +63,30 @@ __memchr:
     cmpldi              n, 32
     blt                 .found
 
+    # Only possible at the start...
+    # Skip if not the first iteration
+    cmpi                cr0, 0, ctr, 0
+    bf                  2, .skip_offset
+    # Check if n is multiple of 8, i.e. aligned to 64-bits
+    moduw               rem, n, tmp
+    cmpi                cr0, 1, rem, 0
+    bt                  2, .mov_back_by_7
+
+    # Check individual bytes and reduce n down to multiple of 8
+    mtctr               rem             # Only deal with remainder num of bytes
+.align_loop:
+    lbz                 s, 0(in_ptr)
+    cmpw                cr0, c, s
+    beqlr               cr0
+    subi                in_ptr, in_ptr, 1
+    bdnz                .align_loop
+
 	# TODO: Messy...this offset only needs to happen once
 	# at the start. As we're starting at the end and
 	# reading 8 bytes at a time, need to go back by 7 bytes
-	# Skip if not the first iteration
-	cmpi				cr0, 0, ctr, 0
-	bf					2, .skip_offset
+.mov_back_by_7:
 	subi				in_ptr, in_ptr, 7
+
 .skip_offset:
     # set up ctr to 4 64-bit elements (32 bytes)
     li                  ctr, 1 # using 1 for now, was 4
@@ -76,16 +96,16 @@ __memchr:
     sv.ld               *s, 0(in_ptr)           # Load from *in_ptr
     sv.cmpb             *t, *s, c64             # this will create a bitmask of FF where character c is found
     sv.cmpi             *cr0, 1, *t, 0
-    # Hard-coded instead of .found, binutils calculated
-    # the wrong address of 0x68, which is bc instruction,
+    # Hard-coded instead of .mov_foward_by_7, binutils calculated
+    # the wrong address of 0x94, which is bc instruction,
     # so get's stuck in infinite loop
     # To calculate the right constant, do make all,
     # then powerpc64le-linux-gnu-objdump -D svp64/memrchr_svp64.o
     # To see the dump of the object file.
-    # Take the address you want to got (i.e. 0x80), subtract
-    # the starting address of sv prefix for sv.bc (0x64),
-    # the difference is the value to use (0x80-0x64=0x1c).
-    #sv.bc               4, *2, .found
+    # Take the address you want to got (i.e. 0xac), subtract
+    # the starting address of sv prefix for sv.bc (0x90),
+    # the difference is the value to use (0xac-0x90=0x1c).
+    #sv.bc               4, *2, .mov_foward_by_7
     sv.bc               4, *2, 0x1c
     svstep              0, 1, 0
     subi                in_ptr, in_ptr, 8
@@ -96,7 +116,11 @@ __memchr:
 
     b                   .outer
 
-
+# At the start, before SVP64 code, in_ptr was moved back by
+# 7 bytes to read the doubleword (64-bits/8 bytes) correctly.
+# Need to add 7 back to in_ptr, as we are checking byte by byte.
+.mov_foward_by_7:
+    addi                in_ptr, in_ptr, 7
 .found:
     mtctr	            n                       # Set up counter
 .found2:
