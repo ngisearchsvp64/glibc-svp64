@@ -79,6 +79,7 @@ __memchr:
     cmpw                cr0, c, s
     beqlr               cr0
     subi                in_ptr, in_ptr, 1
+    subi                n, n, 1
     bdnz                .align_loop
 
 	# TODO: Messy...this offset only needs to happen once
@@ -102,17 +103,21 @@ __memchr:
     # To calculate the right constant, do make all,
     # then powerpc64le-linux-gnu-objdump -D svp64/memrchr_svp64.o
     # To see the dump of the object file.
-    # Take the address you want to got (i.e. 0xac), subtract
+    # Take the address you want to got (i.e. 0xb4), subtract
     # the starting address of sv prefix for sv.bc (0x90),
-    # the difference is the value to use (0xac-0x90=0x1c).
+    # the difference is the value to use (0xb4-0x90=0x24).
     #sv.bc               4, *2, .mov_foward_by_7
-    sv.bc               4, *2, 0x1c
+    sv.bc               4, *2, 0x24
     svstep              0, 1, 0
     subi                in_ptr, in_ptr, 8
     subi                n, n, 8
     #sv.bc/all           16, *cr0, .found
     # alternatively could checked the overflow bit of CR0...
     bdnz                .inner # or alternatively, bc 16, 0, .inner
+
+    # If n is now less than 32, need to mov in_ptr forward by 7
+    cmpldi              n, 32
+    blt                 .mov_foward_by_7
 
     b                   .outer
 
