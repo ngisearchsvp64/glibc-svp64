@@ -1,6 +1,7 @@
 # A simple Makefile, to build run: make all
 memchr_TARGET	= test-memchr-svp64
 memrchr_TARGET	= test-memrchr-svp64
+strchr_TARGET	= test-strchr-svp64
 
 AS = powerpc64le-linux-gnu-as
 CC = gcc
@@ -61,13 +62,26 @@ memrchr_OBJECTS := $(memrchr_CFILES:%.c=%.o)
 memrchr_BINFILES := $(BINDIR)/memrchr_svp64.bin
 memrchr_ELFFILES := $(BINDIR)/memrchr_svp64.elf
 
+strchr_CFILES	:= support_test_main.c test-strchr.c strchr_wrapper.c
+strchr_ASFILES := $(SVP64)/strchr_svp64.s $(SVP64)/strchr_orig_ppc64.s
+strchr_SVP64OBJECTS := $(strchr_ASFILES:$(SVP64)/%.s=$(SVP64)/%.o)
+strchr_OBJECTS := $(strchr_CFILES:%.c=%.o)
+strchr_BINFILES := $(BINDIR)/strchr_svp64.bin
+strchr_ELFFILES := $(BINDIR)/strchr_svp64.elf
+
 test-memchr.o: test-memchr.c
 	$(CC) -c $(CFLAGS) -DMODULE_NAME=testsuite -o $@ $^
 
 test-memrchr.o: test-memrchr.c
 	$(CC) -c $(CFLAGS) -DMODULE_NAME=testsuite -o $@ $^
 
+test-strchr.o: test-strchr.c
+	$(CC) -c $(CFLAGS) -DMODULE_NAME=testsuite -o $@ $^
+
 $(SVP64)/memchr_orig_ppc64.s: $(GLIBCDIR)/string/memchr.c
+	$(CROSSCC) $(CROSSCFLAGS) -S -g0 -Os -DMODULE_NAME=libc -o $@ $^
+
+$(SVP64)/strchr_orig_ppc64.s: $(GLIBCDIR)/string/strchr.c
 	$(CROSSCC) $(CROSSCFLAGS) -S -g0 -Os -DMODULE_NAME=libc -o $@ $^
 
 $(BINDIR)/%.elf: $(SVP64)/%.o
@@ -77,7 +91,7 @@ $(BINDIR)/%.bin: $(BINDIR)/%.elf
 	$(CROSSOBJCOPY) -I elf64-little -O binary $< $@
 
 .PHONY: all clean remove
-all: $(BINDIR) $(memchr_TARGET) $(memrchr_TARGET)
+all: $(BINDIR) $(memchr_TARGET) $(memrchr_TARGET) $(strchr_TARGET)
 
 $(BINDIR):
 	mkdir -p $(BINDIR)
@@ -88,9 +102,13 @@ $(memchr_TARGET): $(memchr_OBJECTS) $(memchr_SVP64OBJECTS) $(memchr_ELFFILES) $(
 $(memrchr_TARGET): $(memrchr_OBJECTS) $(memrchr_SVP64OBJECTS) $(memrchr_ELFFILES) $(memrchr_BINFILES)
 	$(CC) -o $@ $(memrchr_OBJECTS) $(LDFLAGS)
 
+$(strchr_TARGET): $(strchr_OBJECTS) $(strchr_SVP64OBJECTS) $(strchr_ELFFILES) $(strchr_BINFILES)
+	$(CC) -o $@ $(strchr_OBJECTS) $(LDFLAGS)
+
 clean:
 	$ rm -f $(memchr_OBJECTS) $(memchr_SVP64OBJECTS) $(memchr_BINFILES) $(memchr_ELFFILES) $(memchr_TARGET)
 	$ rm -f $(memrchr_OBJECTS) $(memrchr_SVP64OBJECTS) $(memrchr_BINFILES) $(memrchr_ELFFILES) $(memrchr_TARGET)
+	$ rm -f $(strchr_OBJECTS) $(strchr_SVP64OBJECTS) $(strchr_BINFILES) $(strchr_ELFFILES) $(strchr_TARGET)
 
 remove: clean
-	$ rm -f $(memchr_TARGET) $(memrchr_TARGET)
+	$ rm -f $(memchr_TARGET) $(memrchr_TARGET) $(strchr_TARGET)
