@@ -51,7 +51,7 @@
 
 const char *memrchr_svp64_filename = "./bin/memrchr_svp64.bin";
 
-/* Search no more than N bytes of S for C.  */
+/* Starting from the end, search no more than N bytes of S for C.  */
 char*
 MEMRCHR_SVP64 (const char *s, int c, size_t n)
 {
@@ -75,7 +75,7 @@ MEMRCHR_SVP64 (const char *s, int c, size_t n)
     PyObject *c_svp64 = PyLong_FromUnsignedLongLong(c);
     PyList_SetItem(state->initial_regs, 4, c_svp64);
 
-    // Set GPR #5 to the char 's'
+    // Set GPR #5 length of string in bytes 'n'
     PyObject *n_svp64 = PyLong_FromUnsignedLongLong(n);
     PyList_SetItem(state->initial_regs, 5, n_svp64);
 
