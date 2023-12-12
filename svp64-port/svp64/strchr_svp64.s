@@ -87,16 +87,16 @@ __strchr:
     # doubleword has a matching char
     mtctr               tmp
     # Hard-coded instead of .determine_loc, binutils calculated
-    # the wrong address of 0xa4, which is bc instruction,
+    # the wrong address of 0x88, which is bc instruction,
     # so get's stuck in infinite loop
     # To calculate the right constant, do make all,
-    # then powerpc64le-linux-gnu-objdump -D svp64/memrchr_svp64.o
+    # then powerpc64le-linux-gnu-objdump -D svp64/strchr_svp64.o
     # To see the dump of the object file.
-    # Take the address you want to get to (i.e. 0xbc), subtract
-    # the starting address of sv prefix for sv.bc (0xa0),
-    # the difference is the value to use (0xbc-0xa0=0x1c).
+    # Take the address you want to get to (i.e. 0x98), subtract
+    # the starting address of sv prefix for sv.bc (0x84),
+    # the difference is the value to use (0x98-0x84=0x14).
     #sv.bc               0, *2, .determine_loc
-    sv.bc               0, *2, 0x1c
+    sv.bc               0, *2, 0x14
     addi                in_ptr, in_ptr, 32
     subi                n, n, 32
 
