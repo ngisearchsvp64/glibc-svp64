@@ -103,7 +103,7 @@ STRCHR_SVP64 (const char *s, int c)
     uint8_t *sptr8 = (uint8_t *) &sptr64;
     for (size_t i=0; i < bytes_rem; i++) {
         sptr8[i] = sptr[i];
-        printf("%02x ", sptr[i]);
+        printf("%02x ", sptr8[i]);
     }
     printf("\n");
     //printf("val \t: %016lx -> %016lx\n", sptr64, svp64_ptr);

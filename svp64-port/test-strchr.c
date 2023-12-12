@@ -84,6 +84,7 @@ CHAR *STRCHR_SVP64 (const CHAR *, int, size_t);
 CHAR *
 simple_STRCHR (const CHAR *s, int c)
 {
+  printf("strchr called: s: %p, c: %02x(%c)\n", s, (uint8_t)c, c);
   for (; *s != (CHAR) c; ++s)
     if (*s == '\0')
       return NULLRET ((CHAR *) s);
@@ -110,7 +111,7 @@ IMPL (simple_STRCHR, 2)
 static int
 check_result (impl_t *impl, const CHAR *s, int c, const CHAR *exp_res)
 {
-  CHAR *res = CALL (impl, s, c);
+  CHAR *res = CALL (impl, s, c&0xff);
   if (res != exp_res)
     {
       error (0, 0, "Wrong result in function %s %#x %p %p", impl->name,
@@ -267,7 +268,6 @@ test_main (void)
       do_test (0, 16 << i, MAX_SIZE, SMALL_CHAR, MIDDLE_CHAR);
       do_test (i, 16 << i, MAX_SIZE, SMALL_CHAR, MIDDLE_CHAR);
     }
-
   for (i = 1; i < 8; ++i)
     {
       do_test (i, 64, 256, SMALL_CHAR, MIDDLE_CHAR);
