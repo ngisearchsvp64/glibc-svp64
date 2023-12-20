@@ -1,2 +1,4 @@
 *.o
 test-memchr-svp64
+test-memrchr-svp64
+test-strchr-svp64
