@@ -1,4 +1,8 @@
-/* Test memchr functions.
+/* Copyright 2023 VectorCamp
+   Funded by NGI Search Programme HORIZON-CL4-2021-HUMAN-01 2022,
+   https://www.ngisearch.eu/, EU Programme 101069364.
+
+   Test memchr functions.
    Copyright (C) 1999-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Jakub Jelinek <jakub@redhat.com>, 1999.
