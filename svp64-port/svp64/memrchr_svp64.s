@@ -1,5 +1,11 @@
+# SPDX-License-Identifier: LGPL-3-or-later
+# Copyright 2023 VectorCamp
+# Copyright 2023 Red Semiconductor Ltd.
+#
+# Funded by NGI Search Programme HORIZON-CL4-2021-HUMAN-01 2022,
+# https://www.ngisearch.eu/, EU Programme 101069364.
     .machine libresoc
-    .file   "memchr.c"
+    .file   "memrchr.c"
     .abiversion 2
     .section   ".text"
     .align 2
@@ -34,9 +40,9 @@
     or      \rD,\rT,\rD
 .endm
 
-    .globl __memchr
-    .type   __memchr, @function
-__memchr:
+    .globl __memrchr
+    .type   __memrchr, @function
+__memrchr:
 .LFB6:
     .cfi_startproc
 
@@ -166,9 +172,9 @@ __memchr:
     .byte 0,0,0,0,0,0,0,0
     .cfi_endproc
 .LFE6:
-    .size   __memchr,.-__memchr
-    .weak   memchr
-    .hidden memchr
-    .set    memchr,__memchr
+    .size   __memrchr,.-__memrchr
+    .weak   memrchr
+    .hidden memrchr
+    .set    memrchr,__memrchr
     .ident  "GCC: (Debian 8.3.0-2) 8.3.0"
     .section    .note.GNU-stack,"",@progbits

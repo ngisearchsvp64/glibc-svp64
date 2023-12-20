@@ -1,3 +1,9 @@
+# SPDX-License-Identifier: LGPL-3-or-later
+# Copyright 2023 VectorCamp
+# Copyright 2023 Red Semiconductor Ltd.
+#
+# Funded by NGI Search Programme HORIZON-CL4-2021-HUMAN-01 2022,
+# https://www.ngisearch.eu/, EU Programme 101069364.
     .machine libresoc
     .file   "strchr.c"
     .abiversion 2
