@@ -1,3 +1,11 @@
+# SPDX-License-Identifier: LGPL-3-or-later
+# Copyright 2023 VectorCamp
+# Copyright 2023 Red Semiconductor Ltd.
+# Copyright 2023 Vantosh
+#
+# Funded by NGI Search Programme HORIZON-CL4-2021-HUMAN-01 2022,
+# https://www.ngisearch.eu/, EU Programme 101069364.
+
 # A simple Makefile, to build run: make all
 memchr_TARGET	= test-memchr-svp64
 memrchr_TARGET	= test-memrchr-svp64
