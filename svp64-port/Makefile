@@ -11,6 +11,7 @@ memchr_TARGET	= test-memchr-svp64
 memrchr_TARGET	= test-memrchr-svp64
 strchr_TARGET	= test-strchr-svp64
 strcat_TARGET	= test-strcat-svp64
+strcmp_TARGET	= test-strcmp-svp64
 
 AS = powerpc64le-linux-gnu-as
 CC = gcc
@@ -85,6 +86,13 @@ strcat_OBJECTS := $(strchr_CFILES:%.c=%.o)
 strcat_BINFILES := $(BINDIR)/strcat_svp64.bin
 strcat_ELFFILES := $(BINDIR)/strcat_svp64.elf
 
+strcmp_CFILES	:= support_test_main.c test-strcmp.c strcmp_wrapper.c
+strcmp_ASFILES := $(SVP64)/strcmp_svp64.s $(SVP64)/strcmp_orig_ppc64.s
+strcmp_SVP64OBJECTS := $(strcmp_ASFILES:$(SVP64)/%.s=$(SVP64)/%.o)
+strcmp_OBJECTS := $(strchr_CFILES:%.c=%.o)
+strcmp_BINFILES := $(BINDIR)/strcmp_svp64.bin
+strcmp_ELFFILES := $(BINDIR)/strcmp_svp64.elf
+
 test-memchr.o: test-memchr.c
 	$(CC) -c $(CFLAGS) -DMODULE_NAME=testsuite -o $@ $^
 
@@ -97,6 +105,9 @@ test-strchr.o: test-strchr.c
 test-strcat.o: test-strcat.c
 	$(CC) -c $(CFLAGS) -DMODULE_NAME=testsuite -o $@ $^
 
+test-strcmp.o: test-strcmp.c
+	$(CC) -c $(CFLAGS) -DMODULE_NAME=testsuite -o $@ $^
+
 $(SVP64)/memchr_orig_ppc64.s: $(GLIBCDIR)/string/memchr.c
 	$(CROSSCC) $(CROSSCFLAGS) -S -g0 -Os -DMODULE_NAME=libc -o $@ $^
 
@@ -104,6 +115,9 @@ $(SVP64)/strchr_orig_ppc64.s: $(GLIBCDIR)/string/strchr.c
 	$(CROSSCC) $(CROSSCFLAGS) -S -g0 -Os -DMODULE_NAME=libc -o $@ $^
 
 $(SVP64)/strcat_orig_ppc64.s: $(GLIBCDIR)/string/strcat.c
+	$(CROSSCC) $(CROSSCFLAGS) -S -g0 -Os -DMODULE_NAME=libc -o $@ $^
+
+$(SVP64)/strcmp_orig_ppc64.s: $(GLIBCDIR)/string/strcmp.c
 	$(CROSSCC) $(CROSSCFLAGS) -S -g0 -Os -DMODULE_NAME=libc -o $@ $^
 
 $(BINDIR)/%.elf: $(SVP64)/%.o
@@ -130,10 +144,14 @@ $(strchr_TARGET): $(strchr_OBJECTS) $(strchr_SVP64OBJECTS) $(strchr_ELFFILES) $(
 $(strcat_TARGET): $(strcat_OBJECTS) $(strcat_SVP64OBJECTS) $(strcat_ELFFILES) $(strcat_BINFILES)
 	$(CC) -o $@ $(strcat_OBJECTS) $(LDFLAGS)
 
+$(strcmp_TARGET): $(strcmp_OBJECTS) $(strcmp_SVP64OBJECTS) $(strcmp_ELFFILES) $(strcmp_BINFILES)
+	$(CC) -o $@ $(strcmp_OBJECTS) $(LDFLAGS)
+
 clean:
 	$ rm -f $(memchr_OBJECTS) $(memchr_SVP64OBJECTS) $(memchr_BINFILES) $(memchr_ELFFILES) $(memchr_TARGET)
 	$ rm -f $(memrchr_OBJECTS) $(memrchr_SVP64OBJECTS) $(memrchr_BINFILES) $(memrchr_ELFFILES) $(memrchr_TARGET)
 	$ rm -f $(strcat_OBJECTS) $(strcat_SVP64OBJECTS) $(strcat_BINFILES) $(strcat_ELFFILES) $(strcat_TARGET)
+	$ rm -f $(strcmp_OBJECTS) $(strcmp_SVP64OBJECTS) $(strcmp_BINFILES) $(strcmp_ELFFILES) $(strcmp_TARGET)
 
 remove: clean
-	$ rm -f $(memchr_TARGET) $(memrchr_TARGET) $(strchr_TARGET) $(strcat_TARGET)
+	$ rm -f $(memchr_TARGET) $(memrchr_TARGET) $(strchr_TARGET) $(strcat_TARGET) $(strcmp_TARGET)
