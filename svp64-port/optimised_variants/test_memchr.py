@@ -33,7 +33,7 @@ class DecoderTestCase(FHDLTestCase):
 
     def test_memchr(self):
         """
-
+        [Provide link to website where this was copied from...]
         The memchr function locates the first occurrence of c
         (converted to an unsigned char) in the initial n characters
         (each interpreted as unsigned char) of the object pointed to by s.
@@ -43,10 +43,11 @@ class DecoderTestCase(FHDLTestCase):
         The memchr function returns a pointer to the located character,
         or a null pointer if the character does not occur in the object.
 
-        strncpy using post-increment ld/st, sv.bc, and data-dependent ffirst.
-        note that /lf (Load-Fault) mode is not set in this example when it
-        should be. however implementing Load-Fault in ISACaller is tricky
-        (requires implementing multiple hardware models)
+        This memchr implementation uses post-increment load,
+        vectorised branch conditional (sv.bc),
+        and data-dependent fail first.
+        Byte arrays are processed 4-bytes at a time (VL=4), and if a match
+        occurs, the current pointer needs to be adjusted to account for this.
         """
 
         tst_string = "Hello world!\n\x00"
