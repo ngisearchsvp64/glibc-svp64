@@ -1,3 +1,6 @@
+# Can be run standalone with:
+# SILENCELOG='!instr_in_outs' python3 test_memchr.py
+
 import unittest
 from copy import deepcopy
 
@@ -47,13 +50,13 @@ class DecoderTestCase(FHDLTestCase):
         """
 
         tst_string = "Hello world!\n\x00"
-        c = 'r'
+        c = 'z'
         c_ascii = ord(c) # Char to search for
         n = len(tst_string)
 
         start_address = 16
 
-        expected_index = -1
+        expected_index = 0
         index = tst_string.find(c)
         if index != -1:
             expected_index = start_address + index
@@ -102,7 +105,7 @@ class DecoderTestCase(FHDLTestCase):
                 # TODO: perform bound check before subtracting
                 "cmp 0,1,3,7", # If pointer just outside of array, no match.
                 "bc 0, 2, 0x8",
-                "addi 3,0,0", # pre-add offset
+                "addi 3,0,1", # pre-add offset
                 # Need to adjust pointer in Reg 3 to have actual location of
                 # found char
                 "setvl 6,0,1,0,0,0", # Get current value of VL
