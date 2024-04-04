@@ -50,7 +50,8 @@ class DecoderTestCase(FHDLTestCase):
         """
 
         tst_string = "Hello world!\n\x00"
-        c = 'z'
+        #tst_string = ""
+        c = 'w'
         c_ascii = ord(c) # Char to search for
         n = len(tst_string)
 
@@ -58,7 +59,7 @@ class DecoderTestCase(FHDLTestCase):
 
         expected_index = 0
         index = tst_string.find(c)
-        if index != -1:
+        if (n != 0) and (index != -1):
             expected_index = start_address + index
 
         initial_regs = [0] * 32
@@ -86,6 +87,9 @@ class DecoderTestCase(FHDLTestCase):
         maxvl = 4
         lst = SVP64Asm(
             [
+                "cmpi 0,1,5,0", # Check if n==0
+                "bc 12, 2, 0x44", # Jump to no match
+
                 "mtspr 9, 5",                   # move r5 to CTR
                 "add 7,3,5",         # start address+len
                 # start + len + 2 (if this is final pointer val, no match)
@@ -102,17 +106,23 @@ class DecoderTestCase(FHDLTestCase):
                 # test CTR, stop if any cmp failed
                 "sv.bc/all 0, *2, -0x10",
 
-                # TODO: perform bound check before subtracting
-                "cmp 0,1,3,7", # If pointer just outside of array, no match.
-                "bc 0, 2, 0x8",
-                "addi 3,0,1", # pre-add offset
-                # Need to adjust pointer in Reg 3 to have actual location of
-                # found char
+                # Check for no match, add offset to get actual found address
+                # If pointer just outside of array, no match.
+                "cmp 0,1,3,7",
+                "bc 12, 2, 0x14",
+
+                # Adjust pointer in Reg 3 because search ends at multiples of
+                # VL value
                 "setvl 6,0,1,0,0,0", # Get current value of VL
                 "addi 6,6,%d" % ((-1*maxvl)-1), # calculate offset for found char
                 # Reg 3 will now be found address, or one byte outside of array
                 "add 3,3,6",
-                "nop", # this could be replaced by return call
+                "b 0x8",
+
+                # No match, set to 1 (offset is removed later)
+                "addi 3,0,0",
+                # this could be replaced by return call
+                "nop",
             ]
         )
         lst = list(lst)
