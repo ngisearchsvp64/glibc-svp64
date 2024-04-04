@@ -47,15 +47,26 @@ class DecoderTestCase(FHDLTestCase):
         """
 
         tst_string = "Hello world!\n\x00"
-        c = 'w'
-        c_ascii = ord('w') # Char to search for
+        c = 'r'
+        c_ascii = ord(c) # Char to search for
         n = len(tst_string)
-        expected_index = tst_string.find('w')
-        
+
+        start_address = 16
+
+        expected_index = -1
+        index = tst_string.find(c)
+        if index != -1:
+            expected_index = start_address + index
+
         initial_regs = [0] * 32
-        initial_regs[3] = n
-        initial_regs[4] = 0 # Address of found character
-        initial_regs[10] = 16  # load address
+        # load address - will be overwritten with final pointer
+        # (or null or no match)
+        initial_regs[3] = start_address
+        # byte to search for
+        initial_regs[4] = c_ascii
+        # Total number of bytes to search
+        initial_regs[5] = n
+        initial_regs[6] = 0 # temporary
 
         # some memory with identifying garbage in it
         initial_mem = {16: 0xf0f1_f2f3_f4f5_f6f7,
@@ -67,24 +78,38 @@ class DecoderTestCase(FHDLTestCase):
         for i, char in enumerate(tst_string):
             write_byte(initial_mem, 16+i, ord(char))
 
-        maxvl = n+1
+        # Search string four bytes at a time
+        # Registers 16,17,18,19 used as temporaries
+        maxvl = 4
         lst = SVP64Asm(
             [
-                "mtspr 9, 3",                   # move r3 to CTR
-                "addi 0,0,0",                   # initialise r0 to zero
+                "mtspr 9, 5",                   # move r5 to CTR
+                "add 7,3,5",         # start address+len
+                # start + len + 2 (if this is final pointer val, no match)
+                "addi 7,7,2",
                 # chr-copy loop starts here:
                 #   for (i = 0; i < n && src[i] != '\0'; i++)
                 #        dest[i] = src[i];
                 # VL (and r1) = MIN(CTR,MAXVL)
                 "setvl 1,0,%d,0,1,1" % maxvl,
-                # load VL bytes (update r10 addr)
-                "sv.lbzu/pi *16, 1(10)",         # should be /lf here as well
-                # TODO: For now just hard-code required char c
-                "sv.cmpi/ff=eq/vli *0,1,*16,%d" % c_ascii,  # cmp against zero, truncate VL
-                # store VL bytes (update r12 addr)
-                #---"sv.stbu/pi *16, 1(12)",
-                "svstep 0,1,1", # return current step (found char index)
-                "sv.bc/all 0, *2, -0x18",       # test CTR, stop if cmpi failed
+                # load VL bytes (update r3 addr, current pointer)
+                "sv.lbzu/pi *16, 1(3)",
+                # cmp against zero, truncate VL
+                "sv.cmp/ff=eq/vli *0,1,*16,4",
+                # test CTR, stop if any cmp failed
+                "sv.bc/all 0, *2, -0x10",
+
+                # TODO: perform bound check before subtracting
+                "cmp 0,1,3,7", # If pointer just outside of array, no match.
+                "bc 0, 2, 0x8",
+                "addi 3,0,0", # pre-add offset
+                # Need to adjust pointer in Reg 3 to have actual location of
+                # found char
+                "setvl 6,0,1,0,0,0", # Get current value of VL
+                "addi 6,6,%d" % ((-1*maxvl)-1), # calculate offset for found char
+                # Reg 3 will now be found address, or one byte outside of array
+                "add 3,3,6",
+                "nop", # this could be replaced by return call
             ]
         )
         lst = list(lst)
@@ -92,10 +117,13 @@ class DecoderTestCase(FHDLTestCase):
         with Program(lst, bigendian=False) as program:
             sim = self.run_tst_program(program, initial_mem=initial_mem,
                                        initial_regs=initial_regs)
-            mem = sim.mem.dump(printout=True, asciidump=True)
-            print (mem)
-            print(sim.gpr)
-            print(expected_index)
+            #mem = sim.mem.dump(printout=True, asciidump=True)
+            #print (mem)
+            #print(sim.gpr)
+            print("Expected: %d, memchr returned: %d" %
+                  (SelectableInt(expected_index, 64), sim.gpr(3)))
+
+            self.assertEqual(sim.gpr(3), SelectableInt(expected_index, 64))
 
     def run_tst_program(self, prog, initial_regs=None,
                         svstate=None, initial_fprs=None,
