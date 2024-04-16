@@ -136,8 +136,6 @@ class DecoderTestCase(FHDLTestCase):
         with open('test.bin', 'wb') as f:
             f.write(assembled_prog.binfile.getbuffer())
 
-        exit()
-
         with Program(lst, bigendian=False) as program:
             sim = self.run_tst_program(program, initial_mem=initial_mem,
                                        initial_regs=initial_regs)
