@@ -89,7 +89,7 @@ class DecoderTestCase(FHDLTestCase):
             "addi %d, %d, 8" % (shiftR_cnt, shiftR_cnt), # Increase shift value
             "sv.andi. *%d, *%d, 0x80" % (temp2_start, temp2_start),
             "sv.cmpi *cr0, 1, *%d, 0x80" % (temp2_start),
-            "sv.bc 4, *2, 0x0c", # Not equal to 0x80
+            "sv.bc 4, *2, 0x14", # Not equal to 0x80
             # Set a result bit corresponding to input vector element's MSb
             "sv.sld *%d, %d, %d" % (temp2_start, const_1, shiftL_cnt),
             "sv.or *%d, *%d, *%d" % (vecResult_start, vecResult_start, temp2_start),
