@@ -52,6 +52,12 @@ class DecoderTestCase(FHDLTestCase):
         function imitates the function of Intel's '_mm256_shuffle_epi8' op
         """
 
+        a = [ 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,
+             17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
+        b = [14|0x80, 15, 0, 2, 10, 13, 1, 5|0x80, 3|0x80, 2|0x80, 4|0x80, 1, 12, 2, 5,
+             10, 5, 12, 4, 10|0x80, 14, 13, 12, 0, 14, 15, 0, 14, 8, 14, 7, 11]
+        result = ref__mm256_shuffle_epi8(a, b)
+
         # For convenience, set a variable for where this vector will start
         # Make sure there is a gap of two between vec1, vec2, vec3, result,
         # else overlap will occur.
@@ -73,30 +79,28 @@ class DecoderTestCase(FHDLTestCase):
         # Temporaries - tmp 1 stores mask for vec2
         initial_regs[temp1_start]   = 0
         initial_regs[temp1_start+1] = 0
-        initial_regs[temp2_start]   = 0x0F0F0F0F0F0F0F0F
+        initial_regs[temp2_start]   = 0
         initial_regs[temp2_start+1] = 0
         initial_regs[temp3_start]   = 0
         initial_regs[temp3_start+1] = 0
-        # Used for computing mask for vec1/vec2
-        initial_regs[maskReg_start]   = 0
-        initial_regs[maskReg_start+1] = 0
 
         # Input vectors 1 and 2
-        initial_regs[vec1_start]   = 0x0102030405060708
-        initial_regs[vec1_start+1] = 0x0910111213141516
-        initial_regs[vec2_start]   = 0x4544434241403938
-        initial_regs[vec2_start+1] = 0x3736353433323130
-        # Vector 3 - used to select between vec1 and vec2
-        initial_regs[vec3_start]   = 0x0001010001000101
-        initial_regs[vec3_start+1] = 0x0100000001010001
+        initial_regs[vec_a_start]   = 0x0102030405060708
+        initial_regs[vec_a_start+1] = 0x090a0b0c0d0e0f10
+        initial_regs[vec_a_start+2] = 0x1112131415161718
+        initial_regs[vec_a_start+3] = 0x191a1b1c1d1e1f20
+
+        initial_regs[vec_b_start]   = 0x8e0f00020a0d0185
+        initial_regs[vec_b_start+1] = 0x838284010c02050a
+        initial_regs[vec_b_start+2] = 0x050c048a0e0d0c00
+        initial_regs[vec_b_start+3] = 0x0e0f000e080e070b
 
         #TODO:
-        maxvl = 2
         program_text = \
             [
             "setvl 1, 0, 32, 0, 1, 0", # Horizontal-First mode
             # Create temp where only lower nibble of each element in b set.
-            "sv.andi/ew=8 *%d, *%d, 0x0F" % (temp1_start, vec_b_start),
+            "sv.andi/ew=8 *%d, *%d, 0x0f" % (temp1_start, vec_b_start),
             "mtspr 9, 16", # 32*8-bit elements, but only working on half
             # Check if upper bit set, then clear result element if so
             "setvl 1, 0, 16, 0, 1, 1", # Vertical-First mode
@@ -104,10 +108,10 @@ class DecoderTestCase(FHDLTestCase):
             "sv.andi/ew=8 *%d, %d, 0x80" % (temp2_start, vec_b_start),
             "sv.cmpi/ew=8 cr0, 1, *%d, 0x80" % (vec_b_start),
             #TODO: branch if b[i]==0x80
-            "sv.bc BO??, 2, ??, .clear",
+            "sv.bc 12, 2, .clear",
             #TODO: Choose correct SVG, enable REMAP on operand RA,
             # ew=8 (0b11), mm=0, sk=0
-            "svindex SVG??, 0b10000, 4, 3, 0, 0",
+            "svindex %d, 0b10000, 4, 3, 0, 0" % (vec_b_start>>2),
             "sv.addi/ew=8 *%d, *%d, 0" % (vec_r_start, vec_b_start),
             "b .step",
             ".clear:",
