@@ -95,9 +95,6 @@ class DecoderTestCase(FHDLTestCase):
                 "add 7,3,5",         # start address+len
                 # start + len + 2 (if this is final pointer val, no match)
                 "addi 7,7,2",
-                # chr-copy loop starts here:
-                #   for (i = 0; i < n && src[i] != '\0'; i++)
-                #        dest[i] = src[i];
                 # VL (and r1) = MIN(CTR,MAXVL)
                 "setvl 1,0,%d,0,1,1" % maxvl,
                 # load VL bytes (update r3 addr, current pointer)
