@@ -19,6 +19,9 @@ def ref_memrchr(s, c, n):
         if s[i] == c:
             res = i
             break
+    print("s:", s)
+    print("char to search for:", c)
+    print("n:", n)
     return res
 
 def write_byte(mem, addr, val):
@@ -47,18 +50,24 @@ class DecoderTestCase(FHDLTestCase):
         occurs, the current pointer needs to be adjusted to account for this.
         """
 
-        tst_string = "Hello world!\n\x00"
+        #tst_string = "Hello world!\n\x00"
+        tst_string = "This is a test!\n\x00"
         #tst_string = ""
-        c = 'o'
+        c = 'i'
         c_ascii = ord(c) # Char to search for
         n = len(tst_string)
 
         start_address = 16
 
         expected_index = 0
-        index = tst_string.find(c)
+        index = tst_string.rfind(c)
+        expected_index2 = ref_memrchr(tst_string, c, n)
         if (n != 0) and (index != -1):
             expected_index = start_address + index
+            expected_index2 = start_address + index
+
+        print("expected:", expected_index)
+        print("expected2:", expected_index2)
 
         initial_regs = [0] * 32
         # load address - will be overwritten with final pointer
@@ -94,21 +103,21 @@ class DecoderTestCase(FHDLTestCase):
                 # VL (and r1) = MIN(CTR,MAXVL)
                 "setvl 1,0,%d,0,1,1" % maxvl,
                 # load VL bytes (update r3 addr, current pointer)
-                "sv.lbzu/pi *16, -1(7)",
+                "sv.lbzu/pi *16, 0xffff(7)",
                 # cmp against zero, truncate VL
                 "sv.cmp/ff=eq/vli *0,1,*16,4",
                 # test CTR, stop if any cmp failed
                 "sv.bc/all 0, *2, -0x10",
 
                 # Check for no match, add offset to get actual found address
-                # If pointer just outside of array, no match.
-                "cmp 0,1,3,7",
-                "bc 12, 2, 0x14",
+                # If pointer is less than starting address 3, no match.
+                "cmp 0,1,7,3",
+                "bc 12, 0, 0x14", # check LT bit, if set, branch
 
                 # Adjust pointer in Reg7 because search ends at multiples of
                 # VL value
                 "setvl 6,0,1,0,0,0", # Get current value of VL
-                "addi 6,6,%d" % ((-1*maxvl)-1), # calculate offset for found char
+                "subfic 6,6,%d" % (maxvl+1), # calculate offset for found char
                 # Reg 3 will now be found address, or one byte outside of array
                 "add 3,7,6",
                 "b 0x8",
@@ -138,7 +147,7 @@ class DecoderTestCase(FHDLTestCase):
             print("Expected: %d, memrchr returned: %d" %
                   (SelectableInt(expected_index, 64), sim.gpr(3)))
 
-            #self.assertEqual(sim.gpr(3), SelectableInt(expected_index, 64))
+            self.assertEqual(sim.gpr(3), SelectableInt(expected_index, 64))
             print(lst)
 
     def run_tst_program(self, prog, initial_regs=None,
