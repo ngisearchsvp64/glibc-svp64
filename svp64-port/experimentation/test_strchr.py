@@ -55,7 +55,7 @@ class DecoderTestCase(FHDLTestCase):
         # byte to search for
         initial_regs[4] = c_ascii
         # Total number of bytes to search
-        initial_regs[5] = 0
+        initial_regs[5] = 50
         initial_regs[6] = 0 # temporary
         initial_regs[7] = 0 # temporary
 
@@ -74,12 +74,15 @@ class DecoderTestCase(FHDLTestCase):
         maxvl = 4
         lst = SVP64Asm(
             [
-                # .strlen_algo:
-                "addi 7, 3, 0"
+                # bodge due to BO=4 mode not working with sv.bc
+                # means this snippet is limited length initially specified in r5
+                "mtspr 9, 5",                   # move r5 to CTR
+                "addi 7, 3, 0",
                 # VL (and r1) = MIN(CTR,MAXVL)
                 "setvl 1,0,%d,0,1,1" % maxvl,
-                # load VL bytes (update r3 addr, current pointer)
+                # load VL bytes (update r7 addr, current pointer)
                 "sv.lbzu/pi *16, 1(7)",
+                #"sv.lbzu/pi *16, 1(7)",
                 # cmp against zero, truncate VL TODO: change comment
                 "sv.cmpi/ff=eq/vli *0,1,*16,0",
                 # test CTR, stop if any cmp failed
@@ -91,6 +94,7 @@ class DecoderTestCase(FHDLTestCase):
                 "add 7,7,6",
                 # Perform (GPR[7]-GPR[3]) to get string length
                 "subf 5,3,7",
+
                 # The rest of the code is the same as memchr()
                 "cmpi 0,1,5,0", # Check if n==0
                 "bc 12, 2, 0x44", # Jump to no match
