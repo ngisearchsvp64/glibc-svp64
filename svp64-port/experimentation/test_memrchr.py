@@ -102,7 +102,7 @@ class DecoderTestCase(FHDLTestCase):
                 "addi 7,7,-1", # Now points to last address of array s
                 # VL (and r1) = MIN(CTR,MAXVL)
                 "setvl 1,0,%d,0,1,1" % maxvl,
-                # load VL bytes (update r3 addr, current pointer)
+                # load VL bytes (update r7 addr, current pointer)
                 "sv.lbzu/pi *16, 0xffff(7)",
                 # cmp against zero, truncate VL
                 "sv.cmp/ff=eq/vli *0,1,*16,4",
