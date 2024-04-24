@@ -83,7 +83,7 @@ class DecoderTestCase(FHDLTestCase):
                 # load VL bytes (update r7 addr, current pointer)
                 "sv.lbzu/pi *16, 1(7)",
                 #"sv.lbzu/pi *16, 1(7)",
-                # cmp against zero, truncate VL TODO: change comment
+                # cmp against zero, truncate VL
                 "sv.cmpi/ff=eq/vli *0,1,*16,0",
                 # test CTR, stop if any cmp failed
                 "sv.bc/all 0, *2, -0x10",
