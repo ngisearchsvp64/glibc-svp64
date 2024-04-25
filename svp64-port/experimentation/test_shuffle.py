@@ -111,11 +111,11 @@ class DecoderTestCase(FHDLTestCase):
             "sv.bc 12, 2, .clear",
             #TODO: Choose correct SVG, enable REMAP on operand RA,
             # ew=8 (0b11), mm=0, sk=0
-            "svindex %d, 0b10000, 4, 3, 0, 0" % (vec_b_start>>2),
-            "sv.addi/ew=8 *%d, *%d, 0" % (vec_r_start, vec_b_start),
+            "svindex %d, 0b10000, 1, 3, 0, 0" % (vec_b_start>>2),
+            "sv.addi/ew=8 *%d, *%d, 0" % (vec_r_start, vec_a_start),
             "b .step",
             ".clear:",
-            "sv.addi %d, 0, 0" % (vec_r_start),
+            "sv.addi/ew=8 %d, 0, 0" % (vec_r_start),
             ".step:"
             "svstep. 0, 1, 0",
             "bdnz .lower_loop",
